@@ -158,57 +158,55 @@ merged_df_clean = merged_df.dropna(subset=['Product Group'])
 
 from mlxtend.preprocessing import TransactionEncoder
 
-x = merged_df_clean['Product Group'].apply(lambda x: x.split(', '))  # Kategoriler virgülle ayrılmışsa
+# Kategoriler virgülle ayrılmışsa
+x = merged_df_clean['Product Group'].apply(lambda x: x.split(', '))
 
 # TransactionEncoder'ı kullanarak veriyi dönüştür
 te = TransactionEncoder()
 x = te.fit_transform(x)
 x = pd.DataFrame(x, columns=te.columns_)
 
-x.head()
-
+# Kategorileri binary (0 veya 1) değerlere dönüştür
 category = x.astype('int')
 
-category.head()
-
+# ASIN sütununu başa ekle
 category.insert(0, 'asin', merged_df_clean['asin'])
-#category.insert(0, 'product_name', merged_df_clean['product_name'])
 
-category
+# Veri kümesinden tekrar eden ASIN'leri çıkar
+category = category.drop_duplicates()
 
-category= category.drop_duplicates()
-
+# ASIN'i index olarak ayarla
 category = category.set_index('asin')
 
-category.head()
-
-def recommendation_category(cat):
-    cat = category[cat]
-    similar_category = category.corrwith(cat)
-    similar_category = similar_category.sort_values(ascending=False)
-    similar_category = similar_category.iloc[1:]
-    return similar_category.head(3)
-
-recommendation_category('Beauty')
-
+# Transpoz alarak satırları sütunlara çevir
 x = category.transpose()
-x.head()
 
+# ASIN ve ürün adlarını içeren DataFrame
 asin_product_df = merged_df[['asin', 'product_name']].drop_duplicates()
 
 def recommendation_asin(asin):
-    asin = x[asin]
-    similar_asin = x.corrwith(asin)
-    similar_asin = similar_asin.sort_values(ascending=False)
-    similar_asin = similar_asin.iloc[1:].head(20)
-
+    asin = asin.strip()  # Boşlukları temizle
+    
+    if asin not in x.columns:
+        return pd.DataFrame({'Error': [f"ASIN '{asin}' not found in the dataset"]})
+    
+    asin_series = x[asin]  # Verilen ASIN'e ait Series'i al
+    similar_asin = x.corrwith(asin_series)  # Tüm ASIN'lerle korelasyon hesapla
+    similar_asin = similar_asin.sort_values(ascending=False)  # Korelasyona göre sırala
+    similar_asin = similar_asin.iloc[1:].head(20)  # İlk sırayı (kendini) çıkar
+    
+    # Korelasyon sonuçlarını ürün isimleriyle birleştir
     recommendations = pd.DataFrame({
         'ASIN': similar_asin.index,
         'Correlation': similar_asin.values
     }).merge(asin_product_df, left_on='ASIN', right_on='asin', how='left')
+
+    # Eğer istersen, buradaki duplicates fonksiyonunu aktif hale getir
+    # recommendations = recommendations.drop_duplicates(subset=['ASIN'])
+    
     return recommendations[['ASIN', 'product_name', 'Correlation']]
 
-recommendation_asin('B093YJTCRD')
+
 
 
 
