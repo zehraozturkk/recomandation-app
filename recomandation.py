@@ -71,8 +71,28 @@ plt.show()
 
 import pandas as pd
 
+# def get_seasonal_recommendations(season, df, top_n=5):
+#     season_products = df[df['season'] == season]['product_name'].value_counts().head(top_n)
+#     return pd.DataFrame({
+#         'Product Name': season_products.index,
+#         'Purchase Count': season_products.values
+#     })
+
 def get_seasonal_recommendations(season, df, top_n=5):
+    # DataFrame'in gerekli sütunlara sahip olup olmadığını kontrol edin
+    if 'season' not in df.columns or 'product_name' not in df.columns:
+        raise ValueError("DataFrame, 'season' ve 'product_name' sütunlarına sahip olmalıdır.")
+    
+    # İlgili sezonu filtreleyin ve en popüler ürünleri bulun
     season_products = df[df['season'] == season]['product_name'].value_counts().head(top_n)
+    
+    # Eğer ilgili sezonda ürün yoksa, boş bir DataFrame döndürün
+    if season_products.empty:
+        return pd.DataFrame({
+            'Product Name': [],
+            'Purchase Count': []
+        })
+    
     return pd.DataFrame({
         'Product Name': season_products.index,
         'Purchase Count': season_products.values

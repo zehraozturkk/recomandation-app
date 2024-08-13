@@ -5,9 +5,12 @@ st.title('Öneri Sistemi Uygulaması')
 
 user_input = st.text_input('Bir ürün girin:')
 
+user_input = st.button('Önerileri Göster')
+
 if user_input:
     # Fonksiyonu çağırarak önerileri alın
     recommendations = get_seasonal_recommendations('Summer', df)
     st.write('Önerilen ürünler:')
-    for rec in recommendations:
-        st.write(rec)
+    
+    # Önerileri DataFrame olarak gösterin
+    st.write(recommendations)
