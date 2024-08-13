@@ -30,7 +30,6 @@ with category_tab:
             else:
                 st.write(recommendations)
 
-
 with price_tab:
     price_range = st.selectbox('Select Price Range:', df['price_range'].unique())
     if st.button('Show Price Range Recommendations'):

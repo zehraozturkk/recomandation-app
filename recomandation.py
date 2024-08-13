@@ -182,30 +182,27 @@ category = category.set_index('asin')
 x = category.transpose()
 
 # ASIN ve ürün adlarını içeren DataFrame
-asin_product_df = merged_df[['asin', 'product_name']].drop_duplicates()
 
 def recommendation_asin(asin):
+    asin_product_df = merged_df[['asin', 'product_name']].drop_duplicates()
+
     asin = asin.strip()  # Boşlukları temizle
-    
+
     if asin not in x.columns:
         return pd.DataFrame({'Error': [f"ASIN '{asin}' not found in the dataset"]})
-    
+
     asin_series = x[asin]  # Verilen ASIN'e ait Series'i al
     similar_asin = x.corrwith(asin_series)  # Tüm ASIN'lerle korelasyon hesapla
+    similar_asin = similar_asin[similar_asin.index != asin]  # Kendini hariç tut
     similar_asin = similar_asin.sort_values(ascending=False)  # Korelasyona göre sırala
-    similar_asin = similar_asin.iloc[1:].head(20)  # İlk sırayı (kendini) çıkar
+    similar_asin = similar_asin.head(20)  # İlk 20 öneriyi al
     
-    # Korelasyon sonuçlarını ürün isimleriyle birleştir
     recommendations = pd.DataFrame({
         'ASIN': similar_asin.index,
         'Correlation': similar_asin.values
     }).merge(asin_product_df, left_on='ASIN', right_on='asin', how='left')
 
-    # Eğer istersen, buradaki duplicates fonksiyonunu aktif hale getir
-    # recommendations = recommendations.drop_duplicates(subset=['ASIN'])
-    
     return recommendations[['ASIN', 'product_name', 'Correlation']]
-
 
 
 
