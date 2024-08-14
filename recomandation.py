@@ -155,37 +155,28 @@ merged_df = pd.merge(df, df_keepa[["asin", 'Freq. Bought Together',"Product Grou
 merged_df_clean = merged_df.dropna(subset=['Product Group'])
 
 """# kategori bazlı öneri"""
-
 from mlxtend.preprocessing import TransactionEncoder
 
-# Kategoriler virgülle ayrılmışsa
-x = merged_df_clean['Product Group'].apply(lambda x: x.split(', '))
 
-# TransactionEncoder'ı kullanarak veriyi dönüştür
-te = TransactionEncoder()
-x = te.fit_transform(x)
-x = pd.DataFrame(x, columns=te.columns_)
+def load_data():
+    # Veri dosyalarının yolunu belirtin
+    merged_df_clean = pd.read_csv('merged_df_hendel.csv')
+    return merged_df_clean
 
-# Kategorileri binary (0 veya 1) değerlere dönüştür
-category = x.astype('int')
+def preprocess_data(merged_df_clean):
+    x = merged_df_clean['Product Group'].apply(lambda x: x.split(', '))
+    te = TransactionEncoder()
+    x = te.fit_transform(x)
+    x = pd.DataFrame(x, columns=te.columns_)
+    category = x.astype('int')
+    category.insert(0, 'asin', merged_df_clean['asin'])
+    category = category.drop_duplicates()
+    category = category.set_index('asin')
+    x = category.transpose()
+    return x
 
-# ASIN sütununu başa ekle
-category.insert(0, 'asin', merged_df_clean['asin'])
-
-# Veri kümesinden tekrar eden ASIN'leri çıkar
-category = category.drop_duplicates()
-
-# ASIN'i index olarak ayarla
-category = category.set_index('asin')
-
-# Transpoz alarak satırları sütunlara çevir
-x = category.transpose()
-
-# ASIN ve ürün adlarını içeren DataFrame
-
-def recommendation_asin(asin):
-    asin_product_df = merged_df[['asin', 'product_name']].drop_duplicates()
-
+def recommendation_asin(asin, x, merged_df):
+    asin_product_df = merged_df_clean[['asin', 'product_name']].drop_duplicates()
     asin = asin.strip()  # Boşlukları temizle
 
     if asin not in x.columns:
@@ -203,6 +194,54 @@ def recommendation_asin(asin):
     }).merge(asin_product_df, left_on='ASIN', right_on='asin', how='left')
 
     return recommendations[['ASIN', 'product_name', 'Correlation']]
+
+
+
+# # Kategoriler virgülle ayrılmışsa
+# x = merged_df_clean['Product Group'].apply(lambda x: x.split(', '))
+
+# # TransactionEncoder'ı kullanarak veriyi dönüştür
+# te = TransactionEncoder()
+# x = te.fit_transform(x)
+# x = pd.DataFrame(x, columns=te.columns_)
+
+# # Kategorileri binary (0 veya 1) değerlere dönüştür
+# category = x.astype('int')
+
+# # ASIN sütununu başa ekle
+# category.insert(0, 'asin', merged_df_clean['asin'])
+
+# # Veri kümesinden tekrar eden ASIN'leri çıkar
+# category = category.drop_duplicates()
+
+# # ASIN'i index olarak ayarla
+# category = category.set_index('asin')
+
+# # Transpoz alarak satırları sütunlara çevir
+# x = category.transpose()
+
+# # ASIN ve ürün adlarını içeren DataFrame
+
+# def recommendation_asin(asin):
+#     asin_product_df = merged_df[['asin', 'product_name']].drop_duplicates()
+
+#     asin = asin.strip()  # Boşlukları temizle
+
+#     if asin not in x.columns:
+#         return pd.DataFrame({'Error': [f"ASIN '{asin}' not found in the dataset"]})
+
+#     asin_series = x[asin]  # Verilen ASIN'e ait Series'i al
+#     similar_asin = x.corrwith(asin_series)  # Tüm ASIN'lerle korelasyon hesapla
+#     similar_asin = similar_asin[similar_asin.index != asin]  # Kendini hariç tut
+#     similar_asin = similar_asin.sort_values(ascending=False)  # Korelasyona göre sırala
+#     similar_asin = similar_asin.head(20)  # İlk 20 öneriyi al
+    
+#     recommendations = pd.DataFrame({
+#         'ASIN': similar_asin.index,
+#         'Correlation': similar_asin.values
+#     }).merge(asin_product_df, left_on='ASIN', right_on='asin', how='left')
+
+#     return recommendations[['ASIN', 'product_name', 'Correlation']]
 
 
 

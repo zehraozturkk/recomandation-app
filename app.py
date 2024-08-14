@@ -5,7 +5,12 @@ from recomandation import (
     recommendation_asin,
     get_frequently_bought_together,
     get_popular_products_in_price_range,
+    load_data, 
+    preprocess_data
 )  # Import all your recommendation functions
+
+merged_df_clean = load_data()
+x = preprocess_data(merged_df_clean)
 
 # Load your data
 df = pd.read_csv("merged_df_hendel.csv")
@@ -24,11 +29,16 @@ with category_tab:
     asin_input = st.text_input('Enter ASIN for Category Recommendation:')
     if st.button('Show Category Recommendations'):
         if asin_input:
-            recommendations = recommendation_asin(asin_input)
+            recommendations = recommendation_asin(asin_input, x, merged_df_clean)
             if 'Error' in recommendations.columns:
                 st.write(recommendations['Error'].iloc[0])
             else:
                 st.write(recommendations)
+        else:
+            st.write("Please enter a valid ASIN.")
+
+    # Kullanıcıdan ASIN girişi alma
+
 
 with price_tab:
     price_range = st.selectbox('Select Price Range:', df['price_range'].unique())
